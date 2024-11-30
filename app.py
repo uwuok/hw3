@@ -37,7 +37,11 @@ def setup_database() -> None:
         print(f'發生其他錯誤： {e}')
         raise
 
+
 def save_to_database(data_list: list[dict]) -> None:
+    """
+    保存資料至資料庫
+    """
     try:
         with sqlite3.connect(DB_PATH) as conn:
             conn.row_factory = sqlite3.Row # 使用字典型別的 cursor
@@ -61,6 +65,7 @@ def save_to_database(data_list: list[dict]) -> None:
     except Exception as e:
         print(f'發生其他錯誤： {e}')
         raise
+
 
 def parse_contacts() -> list[dict]:
     """解析網頁內容：姓名、職稱、信箱
@@ -112,6 +117,7 @@ def scrape_contacts() -> str:
     except requests.exceptions.RequestException as e:
         messagebox.showerror("請求錯誤", f"發生未知的錯誤：{e}")
     return ''
+
 
 def display_contacts() -> None:
     
