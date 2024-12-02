@@ -68,27 +68,30 @@ def save_to_database(data_list: list[dict]) -> None:
 
 
 def parse_contacts() -> list[dict]:
-    """解析網頁內容：姓名、職稱、信箱
+    """解析網頁內容：姓名、職稱、信箱，確保資料正確配對。
 
     Returns:
-        dict: 教授資訊
+        list[dict]: 教授資訊
     """
     text = scrape_contacts()
-    # regular expression 獲取 name, title, email
-    # 中文姓名
-    name_pattern = re.compile(r'<div class="member_name"><a [^>]*>(.*?)</a>')
-    name_list = name_pattern.findall(text)
     
-    # 職稱
-    title_pattern = re.compile(r'<div class="member_info_title"><i class="fas fa-briefcase"></i>職稱</div>\s*<div class="member_info_content">(.*?)</div>')
-    title_list = title_pattern.findall(text)
-    
-    # 信箱
-    email_pattern = re.compile(r'<div class="member_info_title"><i class="fas fa-envelope"></i>信箱</div>\s*<div class="member_info_content"><a href="mailto://[^"]+">([^<]+)</a>')
-    email_list = email_pattern.findall(text)
-    
-    # data_list 處理
-    data_list = [{'name': name, 'title': title, 'email': email} for name, title, email in zip(name_list, title_list, email_list)]
+    # 使用正則分段匹配每個成員
+    member_pattern = re.compile(
+        r'<div class="member_name"><a [^>]*>(?P<name>.*?)</a>.*?'
+        r'<div class="member_info_title"><i class="fas fa-briefcase"></i>職稱</div>\s*'
+        r'<div class="member_info_content">(?P<title>.*?)</div>.*?'
+        r'<div class="member_info_title"><i class="fas fa-envelope"></i>信箱</div>\s*'
+        r'(?:<div class="member_info_content"><a href="mailto://[^"]+">(?P<email>[^<]+)</a></div>)?',
+        re.DOTALL
+    )
+
+    # 將匹配的資料組合成字典
+    data_list = []
+    for match in member_pattern.finditer(text):
+        name = match.group('name') 
+        title = match.group('title')
+        email = match.group('email') # 如果 email 沒有匹配到，會返回 ''
+        data_list.append({'name': name, 'title': title, 'email': email})
     
     save_to_database(data_list)
     return data_list
@@ -120,6 +123,12 @@ def scrape_contacts() -> str:
 
 
 def display_contacts() -> None:
+    '''將爬蟲到內容顯示至 GUI 中'''
+    
+    # 判斷是否有收到 data
+    data_list = parse_contacts()
+    if not data_list:
+        return
     
     def get_display_width(text: str) -> int:
         '''計算字串的顯示寬度，考慮全形和半形字元'''
@@ -139,7 +148,7 @@ def display_contacts() -> None:
     scrolled_text.insert(tk.END, '-' * sum(widths) + '\n')
     # print(f'{header_line}')
     # print('-' * sum(widths))
-    data_list = parse_contacts()
+    # data_list = parse_contacts()
     for data in data_list:
         # name = data['name']
         # title = data['title']
